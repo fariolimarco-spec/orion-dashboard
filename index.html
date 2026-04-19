@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORION Analytics · Plancia di Comando</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green-dark:#3B6D11;--green-mid:#639922;--green-light:#EAF3DE;--green-border:#C0DD97;
+  --amber-dark:#BA7517;--amber-light:#FAEEDA;--amber-border:#FAC775;
+  --red-dark:#A32D2D;--red-light:#FCEBEB;--red-border:#F7C1C1;
+  --blue-dark:#185FA5;--blue-light:#E6F1FB;--blue-border:#B5D4F4;
+  --gray-100:#F1EFE8;--gray-200:#D3D1C7;--gray-500:#888780;
+  --text:#1a1a18;--text-sec:#5F5E5A;--text-ter:#888780;
+  --border:rgba(0,0,0,0.08);--surface:#fff;--bg:#f8f7f4;
+  --radius:8px;--radius-lg:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13px;display:flex;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{width:200px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;padding:16px 0;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-brand{padding:0 14px 14px;border-bottom:0.5px solid var(--border)}
+.sb-logo{display:flex;align-items:center;gap:7px;margin-bottom:2px}
+.sb-dot{width:8px;height:8px;border-radius:50%;background:var(--green-dark)}
+.sb-name{font-size:12px;font-weight:600;color:var(--text)}
+.sb-ver{font-size:9px;color:var(--text-ter)}
+.sb-nav{padding:10px 8px;flex:1}
+.sb-sec{font-size:8px;font-weight:600;letter-spacing:0.10em;text-transform:uppercase;color:var(--text-ter);padding:0 6px;margin-bottom:4px;margin-top:14px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;margin-bottom:2px;cursor:pointer;transition:background 0.15s}
+.ni:hover{background:var(--gray-100)}
+.ni.active{background:var(--green-light)}
+.ni-icon{font-size:12px;color:var(--text-ter);width:16px;text-align:center}
+.ni.active .ni-icon{color:var(--green-dark)}
+.ni-label{font-size:11px;color:var(--text-sec)}
+.ni.active .ni-label{color:var(--green-dark);font-weight:600}
+.sb-bottom{padding:12px 14px;border-top:0.5px solid var(--border);margin-top:auto}
+.sb-status-label{font-size:8px;color:var(--text-ter);margin-bottom:5px}
+.sb-badge{display:inline-flex;align-items:center;gap:5px;border-radius:5px;padding:4px 8px;border:0.5px solid}
+.sb-badge-dot{width:6px;height:6px;border-radius:50%}
+.sb-badge-text{font-size:9px;font-weight:600}
+.sb-last{font-size:8px;color:var(--text-ter);margin-top:5px}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{background:var(--surface);border-bottom:0.5px solid var(--border);padding:0 24px;position:sticky;top:0;z-index:10}
+.topbar-top{display:flex;justify-content:space-between;align-items:center;padding:14px 0 10px}
+.tb-brand-line{font-size:9px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-ter);margin-bottom:3px}
+.tb-title{font-size:20px;font-weight:500;color:var(--text);line-height:1.2}
+.tb-ts{font-size:10px;color:var(--text-ter);text-align:right;line-height:1.7}
+.topbar-actions{display:flex;gap:8px;padding:10px 0 14px;border-top:0.5px solid var(--border);align-items:center}
+.btn{font-size:11px;font-weight:600;padding:7px 16px;border-radius:6px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.15s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--gray-100)}
+.btn:active{transform:scale(0.97)}
+.btn-green{background:var(--green-dark);color:#fff;border-color:var(--green-dark)}
+.btn-green:hover{background:#27500A;color:#fff}
+.btn-amber{background:var(--amber-dark);color:#fff;border-color:var(--amber-dark)}
+.btn-amber:hover{background:#854F0B;color:#fff}
+.btn-red{background:var(--red-dark);color:#fff;border-color:var(--red-dark)}
+.btn-red:hover{background:#791F1F;color:#fff}
+.btn-blue{background:var(--blue-dark);color:#fff;border-color:var(--blue-dark)}
+.btn-blue:hover{background:#0C447C;color:#fff}
+.btn-sm{font-size:10px;padding:4px 10px}
+.btn-divider{width:0.5px;background:var(--border);height:24px;margin:0 2px}
+
+.content{padding:20px 24px;flex:1}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:var(--radius-lg);font-size:12px;font-weight:600;z-index:1000;display:none;animation:slideIn 0.3s ease;box-shadow:0 4px 20px rgba(0,0,0,0.12)}
+.toast.show{display:block}
+.toast-ok{background:var(--green-dark);color:#fff}
+.toast-warn{background:var(--amber-dark);color:#fff}
+.toast-info{background:var(--blue-dark);color:#fff}
+@keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-lg);padding:24px;min-width:400px;max-width:500px;border:0.5px solid var(--border)}
+.modal-title{font-size:16px;font-weight:500;color:var(--text);margin-bottom:6px}
+.modal-sub{font-size:11px;color:var(--text-ter);margin-bottom:20px}
+.modal-field{margin-bottom:14px}
+.modal-label{font-size:10px;font-weight:600;color:var(--text-ter);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+.modal-input{width:100%;padding:8px 12px;border-radius:6px;border:0.5px solid var(--border);font-size:13px;color:var(--text);background:var(--bg);font-family:inherit}
+.modal-input:focus{outline:none;border-color:var(--green-dark)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:0.5px solid var(--border)}
+
+/* ── Banner ── */
+.banner{border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;border:0.5px solid;transition:all 0.5s}
+.bn-left{display:flex;align-items:center;gap:12px}
+.bn-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.bn-title{font-size:18px;font-weight:500}
+.bn-sub{font-size:10px;opacity:0.75;margin-top:3px}
+.bn-ts{font-size:9px;opacity:0.55;text-align:right;line-height:1.7}
+
+/* ── KPI ── */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.kpi{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.kpi-label{font-size:9px;color:var(--text-ter);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px}
+.kpi-val{font-size:22px;font-weight:500;color:var(--text)}
+.kpi-sub{font-size:9px;color:var(--text-ter);margin-top:3px}
+.kpi-trend{font-size:9px;font-weight:600;margin-top:3px}
+.trend-up{color:var(--green-dark)}
+.trend-warn{color:var(--amber-dark)}
+
+/* ── Grid ── */
+.grid-main{display:grid;grid-template-columns:1fr 230px;gap:14px;margin-bottom:18px}
+.grid-bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+.panel{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+.panel-title{font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-ter);margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+
+/* ── Asset table ── */
+.asset-table{width:100%;border-collapse:collapse}
+.asset-table th{font-size:9px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-ter);text-align:left;padding:6px 10px;border-bottom:0.5px solid var(--border)}
+.asset-table td{font-size:11px;color:var(--text);padding:9px 10px;border-bottom:0.5px solid rgba(0,0,0,0.04);vertical-align:middle}
+.asset-table tr:last-child td{border-bottom:none}
+.asset-table tr:hover td{background:#fafaf8}
+.aname{font-size:12px;font-weight:600;color:var(--text)}
+.asub{font-size:9px;color:var(--text-ter)}
+.mini-track{height:2px;background:var(--gray-100);border-radius:1px;margin-top:3px;width:52px}
+.mini-fill{height:2px;border-radius:1px}
+.dots{display:flex;gap:4px}
+.dot{width:8px;height:8px;border-radius:50%}
+.dot-on{background:var(--green-dark)}
+.dot-off{background:var(--gray-200)}
+.pill{font-size:9px;font-weight:600;padding:3px 8px;border-radius:4px}
+.pill-g{background:var(--green-light);color:var(--green-dark)}
+.pill-a{background:var(--amber-light);color:var(--amber-dark)}
+.pill-r{background:var(--red-light);color:var(--red-dark)}
+
+/* ── Pipeline ── */
+.pipe-step{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid rgba(0,0,0,0.04)}
+.pipe-step:last-child{border-bottom:none}
+.pipe-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;transition:all 0.3s}
+.pi-ok{background:var(--green-light);color:var(--green-dark)}
+.pi-run{background:var(--blue-light);color:var(--blue-dark)}
+.pi-idle{background:var(--gray-100);color:var(--text-ter)}
+.pipe-info{flex:1}
+.pipe-label{font-size:11px;color:var(--text);font-weight:500}
+.pipe-sub{font-size:9px;color:var(--text-ter);margin-top:1px}
+.pipe-time{font-size:9px;color:var(--text-ter);font-family:monospace}
+
+/* ── Config ── */
+.config-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid rgba(0,0,0,0.04)}
+.config-row:last-child{border-bottom:none}
+.config-label{font-size:11px;color:var(--text);font-weight:500}
+.config-key{font-size:9px;color:var(--text-ter);margin-top:1px;font-family:monospace}
+.config-val{display:flex;align-items:center;gap:8px}
+.config-num{font-size:13px;font-weight:600;color:var(--green-dark)}
+.config-edit{font-size:9px;color:var(--blue-dark);cursor:pointer;font-weight:600}
+.config-edit:hover{text-decoration:underline}
+
+/* ── Gauge ── */
+.gauge{margin-bottom:8px}
+.gauge-row{display:flex;justify-content:space-between;margin-bottom:3px}
+.gname{font-size:10px;color:var(--text)}
+.gval{font-size:10px;font-weight:600;color:var(--text)}
+.gtrack{height:3px;background:var(--gray-100);border-radius:2px}
+.gfill{height:3px;border-radius:2px;transition:width 0.6s ease}
+.glimits{display:flex;justify-content:space-between;margin-top:2px}
+.glimit{font-size:8px;color:var(--text-ter)}
+
+/* ── Doctor ── */
+.doctor-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid rgba(0,0,0,0.04)}
+.doctor-row:last-child{border-bottom:none}
+.doctor-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0}
+.di-ok{background:var(--green-light);color:var(--green-dark)}
+.di-warn{background:var(--amber-light);color:var(--amber-dark)}
+.doctor-label{font-size:10px;color:var(--text);flex:1}
+.doctor-val{font-size:9px;color:var(--text-ter);font-weight:500}
+
+/* ── Stress ── */
+.stress-score{font-size:28px;font-weight:500;color:var(--green-dark)}
+.stress-label{font-size:9px;color:var(--text-ter);margin-top:2px;margin-bottom:10px}
+.stress-bar{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:8px}
+.stress-dot{width:13px;height:13px;border-radius:3px}
+.sd-ok{background:var(--green-mid)}
+.sd-fail{background:var(--red-dark)}
+
+/* ── Log ── */
+.log-item{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:0.5px solid rgba(0,0,0,0.04)}
+.log-item:last-child{border-bottom:none}
+.lb{font-size:8px;font-weight:600;padding:2px 6px;border-radius:3px;flex-shrink:0;margin-top:2px}
+.lb-ok{background:var(--green-light);color:var(--green-dark)}
+.lb-warn{background:var(--amber-light);color:var(--amber-dark)}
+.lb-err{background:var(--red-light);color:var(--red-dark)}
+.log-date{font-size:10px;font-weight:600;color:var(--text)}
+.log-desc{font-size:9px;color:var(--text-ter);margin-top:2px}
+.log-tags{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap}
+.log-tag{font-size:8px;background:var(--gray-100);color:var(--text-sec);padding:1px 5px;border-radius:3px}
+
+/* ── Emergency ── */
+.emergency-panel{background:var(--red-light);border:0.5px solid var(--red-border);border-radius:var(--radius-lg);padding:14px 16px}
+.emergency-title{font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--red-dark);margin-bottom:10px;padding-bottom:8px;border-bottom:0.5px solid var(--red-border)}
+.emergency-btns{display:flex;flex-direction:column;gap:6px}
+
+/* ── Progress bar pipeline ── */
+.pipeline-progress{display:none;margin-top:10px}
+.progress-track{height:4px;background:var(--gray-100);border-radius:2px;overflow:hidden}
+.progress-fill{height:4px;background:var(--green-dark);border-radius:2px;width:0%;transition:width 0.4s ease}
+.progress-label{font-size:9px;color:var(--text-ter);margin-top:4px}
+
+.footer{padding:10px 24px;border-top:0.5px solid var(--border);font-size:9px;color:var(--text-ter);display:flex;justify-content:space-between;background:var(--surface)}
+
+.spin{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL GENERICO -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()" id="modal-content"></div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo"><div class="sb-dot"></div><div class="sb-name">Orion Analytics</div></div>
+    <div class="sb-ver">V205 · Buffett Engineering</div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">Principale</div>
+    <div class="ni active"><span class="ni-icon">▪</span><span class="ni-label">Plancia di controllo</span></div>
+    <div class="ni" onclick="showToast('Dettaglio asset — disponibile su GitHub Pages','info')"><span class="ni-icon">●</span><span class="ni-label">Dettaglio asset</span></div>
+    <div class="ni" onclick="showToast('Log completo — disponibile su GitHub Pages','info')"><span class="ni-icon">≡</span><span class="ni-label">Log completo</span></div>
+    <div class="sb-sec">Gestione</div>
+    <div class="ni" onclick="openAddAsset()"><span class="ni-icon">+</span><span class="ni-label">Aggiungi asset</span></div>
+    <div class="ni" onclick="openSoglie()"><span class="ni-icon">⚙</span><span class="ni-label">Modifica soglie</span></div>
+    <div class="ni" onclick="openReimporta()"><span class="ni-icon">↺</span><span class="ni-label">Reimporta asset</span></div>
+    <div class="sb-sec">Diagnostica</div>
+    <div class="ni" onclick="runStressTest()"><span class="ni-icon">✓</span><span class="ni-label">Stress test</span></div>
+    <div class="ni" onclick="runDoctor()"><span class="ni-icon">+</span><span class="ni-label">Doctor import</span></div>
+    <div class="ni" onclick="exportLog()"><span class="ni-icon">⬇</span><span class="ni-label">Esporta log Excel</span></div>
+    <div class="sb-sec">Sistema</div>
+    <div class="ni" onclick="openInfo()"><span class="ni-icon">ℹ</span><span class="ni-label">Informazioni</span></div>
+  </div>
+  <div class="sb-bottom">
+    <div class="sb-status-label">Stato sistema</div>
+    <div class="sb-badge" id="sb-badge" style="background:var(--green-light);border-color:var(--green-border)">
+      <div class="sb-badge-dot" id="sb-badge-dot" style="background:var(--green-dark)"></div>
+      <div class="sb-badge-text" id="sb-badge-text" style="color:var(--green-dark)">Stabile</div>
+    </div>
+    <div class="sb-last" id="sb-last">Aggiornato: 13/04/2026 · 22:15</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-top">
+      <div>
+        <div class="tb-brand-line">Orion Analytics · V205 · Buffett Engineering</div>
+        <div class="tb-title">Plancia di controllo</div>
+      </div>
+      <div class="tb-ts">
+        <strong id="current-time" style="color:var(--text)">13/04/2026 · 22:15</strong><br>
+        Dati aggiornati 15 minuti fa
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-green" id="btn-pipeline" onclick="runPipeline()">▶&nbsp; Esegui pipeline completa</button>
+      <div class="btn-divider"></div>
+      <button class="btn" onclick="refreshView()">↻&nbsp; Aggiorna vista</button>
+      <button class="btn btn-blue" onclick="exportLog()">⬇&nbsp; Esporta log Excel</button>
+      <button class="btn btn-amber" onclick="openAddAsset()">+&nbsp; Aggiungi asset</button>
+      <button class="btn" onclick="openSoglie()">⚙&nbsp; Modifica soglie</button>
+      <button class="btn" onclick="openReimporta()">↺&nbsp; Reimporta asset</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- BANNER -->
+    <div class="banner" id="banner" style="background:var(--green-light);border-color:var(--green-border)">
+      <div class="bn-left">
+        <div class="bn-dot" id="bn-dot" style="background:var(--green-dark)"></div>
+        <div>
+          <div class="bn-title" id="bn-title" style="color:var(--green-dark)">Sistema Stabile</div>
+          <div class="bn-sub" id="bn-sub" style="color:var(--green-dark)">4 asset stabili · 1 fragile · 0 instabili — nessuna azione richiesta</div>
+        </div>
+      </div>
+      <div class="bn-ts" id="bn-ts" style="color:var(--green-dark)">
+        Dati al 13/04/2026 · 22:00<br>
+        Pipeline eseguita 47 volte · 44 OK · 3 WARNING
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-label">Asset monitorati</div><div class="kpi-val" id="kpi-assets">5</div><div class="kpi-sub">GC · SI · SPY · VOO · SMH</div></div>
+      <div class="kpi"><div class="kpi-label">Volatilità media</div><div class="kpi-val">18,4%</div><div class="kpi-sub">soglia 30%</div><div class="kpi-trend trend-up">▼ -1,2% vs settimana</div></div>
+      <div class="kpi"><div class="kpi-label">Drawdown medio 6M</div><div class="kpi-val">6,2%</div><div class="kpi-sub">soglia 20%</div><div class="kpi-trend trend-up">▼ -0,4% vs settimana</div></div>
+      <div class="kpi"><div class="kpi-label">Punteggio medio</div><div class="kpi-val">1,8 / 2</div><div class="kpi-sub">coerente</div></div>
+      <div class="kpi"><div class="kpi-label">Stress test</div><div class="kpi-val" id="kpi-stress">29/29</div><div class="kpi-sub" id="kpi-stress-sub">Ultimo: 13/04/2026</div><div class="kpi-trend trend-up" id="kpi-stress-trend">Tutti i test OK</div></div>
+    </div>
+
+    <!-- ASSET + PIPELINE -->
+    <div class="grid-main">
+      <div class="panel">
+        <div class="panel-title">
+          <span>Asset monitorati</span>
+          <button class="btn btn-sm btn-amber" onclick="openAddAsset()">+ Aggiungi</button>
+        </div>
+        <table class="asset-table" id="asset-table">
+          <thead><tr><th>Asset</th><th>Prezzo</th><th>Volatilità</th><th>DD 6M</th><th>Score</th><th>Stato</th><th>Azioni</th></tr></thead>
+          <tbody id="asset-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span>Pipeline · Ultimo ciclo</span></div>
+        <div id="pipeline-steps">
+          <div class="pipe-step"><div class="pipe-icon pi-ok" id="ps1">✓</div><div class="pipe-info"><div class="pipe-label">Download dati</div><div class="pipe-sub" id="ps1-sub">5/5 asset · Yahoo Finance</div></div><div class="pipe-time" id="ps1-time">22:00</div></div>
+          <div class="pipe-step"><div class="pipe-icon pi-ok" id="ps2">✓</div><div class="pipe-info"><div class="pipe-label">Import CSV</div><div class="pipe-sub" id="ps2-sub">44.000 record</div></div><div class="pipe-time" id="ps2-time">22:01</div></div>
+          <div class="pipe-step"><div class="pipe-icon pi-ok" id="ps3">✓</div><div class="pipe-info"><div class="pipe-label">Doctor import</div><div class="pipe-sub" id="ps3-sub">Nessun warning</div></div><div class="pipe-time" id="ps3-time">22:02</div></div>
+          <div class="pipe-step"><div class="pipe-icon pi-ok" id="ps4">✓</div><div class="pipe-info"><div class="pipe-label">Analisi quantitativa</div><div class="pipe-sub" id="ps4-sub">Core_Quant_v2 OK</div></div><div class="pipe-time" id="ps4-time">22:03</div></div>
+          <div class="pipe-step"><div class="pipe-icon pi-ok" id="ps5">✓</div><div class="pipe-info"><div class="pipe-label">Export dashboard</div><div class="pipe-sub" id="ps5-sub">HTML → GitHub Pages</div></div><div class="pipe-time" id="ps5-time">22:04</div></div>
+        </div>
+        <div class="pipeline-progress" id="pipeline-progress">
+          <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+          <div class="progress-label" id="progress-label">Avvio pipeline...</div>
+        </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)" id="pipeline-footer">
+          <div style="font-size:9px;color:var(--text-ter);margin-bottom:4px">Durata totale</div>
+          <div style="font-size:13px;font-weight:600;color:var(--green-dark)">4 min 12 sec</div>
+          <div style="font-size:9px;color:var(--text-ter);margin-top:2px">Prossima esecuzione consigliata: domani dopo le 22:00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="grid-bottom">
+
+      <!-- Soglie + Doctor -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel">
+          <div class="panel-title">
+            <span>Soglie operative</span>
+            <button class="btn btn-sm btn-amber" onclick="openSoglie()">✎ Modifica</button>
+          </div>
+          <div class="config-row"><div><div class="config-label">Soglia volatilità</div><div class="config-key">CORE_SOGLIA_VOL</div></div><div class="config-val"><span class="config-num" id="soglia-vol">30%</span><span class="config-edit" onclick="openSogliaEdit('vol')">modifica</span></div></div>
+          <div class="config-row"><div><div class="config-label">Soglia drawdown</div><div class="config-key">CORE_SOGLIA_DD</div></div><div class="config-val"><span class="config-num" id="soglia-dd">20%</span><span class="config-edit" onclick="openSogliaEdit('dd')">modifica</span></div></div>
+          <div class="config-row"><div><div class="config-label">Soglia stabile</div><div class="config-key">CORE_SOGLIA_STABILE</div></div><div class="config-val"><span class="config-num" id="soglia-stabile">0,6</span><span class="config-edit" onclick="openSogliaEdit('stabile')">modifica</span></div></div>
+          <div class="config-row"><div><div class="config-label">Soglia fragile</div><div class="config-key">CORE_SOGLIA_FRAGILE</div></div><div class="config-val"><span class="config-num" id="soglia-fragile">0,4</span><span class="config-edit" onclick="openSogliaEdit('fragile')">modifica</span></div></div>
+          <div style="margin-top:10px">
+            <div class="gauge"><div class="gauge-row"><span class="gname">Volatilità vs soglia</span><span class="gval">18,4% / 30%</span></div><div class="gtrack"><div class="gfill" style="width:61%;background:var(--green-dark)"></div></div><div class="glimits"><span class="glimit">0%</span><span class="glimit">30%</span></div></div>
+            <div class="gauge"><div class="gauge-row"><span class="gname">Drawdown vs soglia</span><span class="gval">6,2% / 20%</span></div><div class="gtrack"><div class="gfill" style="width:31%;background:var(--green-dark)"></div></div><div class="glimits"><span class="glimit">0%</span><span class="glimit">20%</span></div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><span>Doctor import</span><button class="btn btn-sm" onclick="runDoctor()">▶ Riesegui</button></div>
+          <div class="doctor-row"><div class="doctor-icon di-ok">✓</div><div class="doctor-label">Record validi</div><div class="doctor-val" id="dr-records">44.187 / 44.200</div></div>
+          <div class="doctor-row"><div class="doctor-icon di-ok">✓</div><div class="doctor-label">Asset completi</div><div class="doctor-val">5 / 5</div></div>
+          <div class="doctor-row"><div class="doctor-icon di-ok">✓</div><div class="doctor-label">Prezzi anomali</div><div class="doctor-val">0 rilevati</div></div>
+          <div class="doctor-row"><div class="doctor-icon di-warn">!</div><div class="doctor-label">Gap temporali</div><div class="doctor-val">3 weekend</div></div>
+          <div class="doctor-row"><div class="doctor-icon di-ok">✓</div><div class="doctor-label">Esito generale</div><div class="doctor-val" style="color:var(--green-dark);font-weight:600" id="dr-esito">OK</div></div>
+        </div>
+      </div>
+
+      <!-- Stress + Log -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel">
+          <div class="panel-title"><span>Stress test</span><button class="btn btn-sm btn-blue" onclick="runStressTest()">▶ Esegui ora</button></div>
+          <div class="stress-score" id="stress-score">29 / 29</div>
+          <div class="stress-label" id="stress-label">Ultima esecuzione: 13/04/2026 · Tutti i test superati</div>
+          <div class="stress-bar" id="stress-bar"></div>
+        </div>
+        <div class="panel" style="flex:1">
+          <div class="panel-title">
+            <span>Log recenti</span>
+            <div style="display:flex;gap:5px">
+              <button class="btn btn-sm btn-blue" onclick="exportLog()">⬇ Excel</button>
+              <button class="btn btn-sm" onclick="showToast('Log completo — disponibile su GitHub Pages','info')">Tutto →</button>
+            </div>
+          </div>
+          <div id="log-container"></div>
+        </div>
+      </div>
+
+      <!-- Info + Emergency -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel">
+          <div class="panel-title"><span>Informazioni sistema</span></div>
+          <div class="doctor-row"><div class="doctor-label">Versione database</div><div class="doctor-val" style="font-family:monospace">V205</div></div>
+          <div class="doctor-row"><div class="doctor-label">File</div><div class="doctor-val" style="font-family:monospace;font-size:8px">ORION_V205.accdb</div></div>
+          <div class="doctor-row"><div class="doctor-label">Record totali</div><div class="doctor-val">44.200</div></div>
+          <div class="doctor-row"><div class="doctor-label">Fonte dati</div><div class="doctor-val">Yahoo Finance</div></div>
+          <div class="doctor-row"><div class="doctor-label">Hosting</div><div class="doctor-val">GitHub Pages</div></div>
+          <div class="doctor-row"><div class="doctor-label">Pipeline eseguite</div><div class="doctor-val">47 totali · 44 OK</div></div>
+          <div class="doctor-row"><div class="doctor-label">Ultima build HTML</div><div class="doctor-val">13/04/2026</div></div>
+        </div>
+        <div class="emergency-panel">
+          <div class="emergency-title">⚠ Zona emergenza</div>
+          <div class="emergency-btns">
+            <button class="btn btn-red btn-sm" style="width:100%" onclick="confirmAction('reset')">↺ Reset sistema</button>
+            <button class="btn btn-amber btn-sm" style="width:100%;margin-top:6px" onclick="confirmAction('delete')">🗑 Cancella dati asset</button>
+            <button class="btn btn-sm" style="width:100%;margin-top:6px;border-color:rgba(163,45,45,0.4);color:var(--red-dark)" onclick="confirmAction('reimport')">⚠ Reimporta da zero</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>ORION Analytics V205 · Buffett Engineering · Uso personale e confidenziale</span>
+    <span>Yahoo Finance · Pipeline OK · 13/04/2026 · 22:15 · Dati aggiornati 15 min fa</span>
+  </div>
+</div>
+
+<script>
+// ── Dati simulati ──
+var assets = [
+  {code:'GC=F',name:'Oro',type:'Metallo',price:'3.218,40',vol:14.2,dd:7.3,pt:2,stato:'Stabile'},
+  {code:'SI=F',name:'Argento',type:'Metallo',price:'31,84',vol:28.1,dd:9.2,pt:1,stato:'Fragile'},
+  {code:'SPY',name:'Broad Market',type:'ETF',price:'512,30',vol:16.8,dd:0.0,pt:2,stato:'Stabile'},
+  {code:'VOO',name:'Broad Market',type:'ETF',price:'469,10',vol:16.5,dd:0.0,pt:2,stato:'Stabile'},
+  {code:'SMH',name:'Semiconduttori',type:'ETF',price:'198,70',vol:24.3,dd:0.0,pt:2,stato:'Stabile'}
+];
+
+var logs = [
+  {badge:'OK',date:'13/04/2026 · 22:15',desc:'Pipeline completa · 5/5 · Stress 29/29',tags:['GC=F ✓','SI=F ✓','SPY ✓','VOO ✓','SMH ✓']},
+  {badge:'OK',date:'10/04/2026 · 22:05',desc:'Pipeline completa · 5/5 · Nessun warning',tags:[]},
+  {badge:'WARN',date:'06/04/2026 · 22:10',desc:'SPY/VOO dati insufficienti · Weekend',tags:['SPY ▲','VOO ▲']},
+  {badge:'OK',date:'03/04/2026 · 22:00',desc:'Pipeline completa · 5/5 · Nessun warning',tags:[]}
+];
+
+// ── Render ──
+function renderAssets(){
+  var tb = document.getElementById('asset-tbody');
+  tb.innerHTML = '';
+  assets.forEach(function(a,i){
+    var pc = a.stato==='Stabile'?'pill-g':a.stato==='Fragile'?'pill-a':'pill-r';
+    var vc = a.vol<=30?'#3B6D11':'#BA7517';
+    var dc = a.dd<=20?'#3B6D11':'#BA7517';
+    var vb = Math.min(a.vol/30*100,100).toFixed(0);
+    var db = Math.min(a.dd/20*100,100).toFixed(0);
+    var dots = [0,1].map(function(j){return '<div class="dot '+(j<a.pt?'dot-on':'dot-off')+'"></div>';}).join('');
+    tb.innerHTML += '<tr>'+
+      '<td><div class="aname">'+a.code+'</div><div class="asub">'+a.name+' · '+a.type+'</div></td>'+
+      '<td>'+a.price+'</td>'+
+      '<td><div>'+a.vol.toFixed(1)+'%</div><div class="mini-track"><div class="mini-fill" style="width:'+vb+'%;background:'+vc+'"></div></div></td>'+
+      '<td><div>'+a.dd.toFixed(1)+'%</div><div class="mini-track"><div class="mini-fill" style="width:'+db+'%;background:'+dc+'"></div></div></td>'+
+      '<td><div class="dots">'+dots+'</div></td>'+
+      '<td><span class="pill '+pc+'">'+a.stato+'</span></td>'+
+      '<td><div style="display:flex;gap:4px">'+
+        '<button class="btn btn-sm" onclick="reimportaAsset('+i+')" title="Reimporta">↺</button>'+
+        '<button class="btn btn-sm btn-red" onclick="removeAsset('+i+')" title="Rimuovi">✕</button>'+
+      '</div></td>'+
+    '</tr>';
+  });
+  document.getElementById('kpi-assets').textContent = assets.length;
+}
+
+function renderLog(){
+  var c = document.getElementById('log-container');
+  c.innerHTML = '';
+  logs.forEach(function(l){
+    var cls = l.badge==='OK'?'lb-ok':l.badge==='WARN'?'lb-warn':'lb-err';
+    var tags = l.tags.map(function(t){return '<span class="log-tag">'+t+'</span>';}).join('');
+    c.innerHTML += '<div class="log-item"><span class="lb '+cls+'">'+l.badge+'</span>'+
+      '<div><div class="log-date">'+l.date+'</div>'+
+      '<div class="log-desc">'+l.desc+'</div>'+
+      (tags?'<div class="log-tags">'+tags+'</div>':'')+
+      '</div></div>';
+  });
+}
+
+function renderStress(ok,tot){
+  var bar = document.getElementById('stress-bar');
+  bar.innerHTML = '';
+  for(var i=0;i<tot;i++){
+    bar.innerHTML += '<div class="stress-dot '+(i<ok?'sd-ok':'sd-fail')+'"></div>';
+  }
+}
+
+// ── Toast ──
+function showToast(msg, type){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast toast-'+(type||'ok')+' show';
+  setTimeout(function(){t.className='toast';},3000);
+}
+
+// ── Modal ──
+function openModal(html){
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+// ── Pipeline ──
+var pipelineRunning = false;
+function runPipeline(){
+  if(pipelineRunning) return;
+  pipelineRunning = true;
+  var btn = document.getElementById('btn-pipeline');
+  btn.innerHTML = '<span class="spin">↻</span>&nbsp; Pipeline in corso...';
+  btn.disabled = true;
+
+  var steps = ['ps1','ps2','ps3','ps4','ps5'];
+  var subs = ['Scaricamento dati Yahoo...','Importazione CSV...','Controllo Doctor...','Analisi quantitativa...','Export HTML...'];
+  var times = ['','','','',''];
+  var prog = document.getElementById('pipeline-progress');
+  var fill = document.getElementById('progress-fill');
+  var label = document.getElementById('progress-label');
+  var footer = document.getElementById('pipeline-footer');
+  prog.style.display='block';
+  footer.style.display='none';
+
+  steps.forEach(function(id){
+    var el = document.getElementById(id);
+    el.className = 'pipe-icon pi-idle';
+    el.textContent = '○';
+  });
+
+  var i = 0;
+  function nextStep(){
+    if(i>0){
+      var prev = document.getElementById(steps[i-1]);
+      prev.className = 'pipe-icon pi-ok';
+      prev.textContent = '✓';
+      document.getElementById(steps[i-1]+'-sub').textContent = ['5/5 asset · Yahoo Finance','44.000 record','Nessun warning','Core_Quant_v2 OK','HTML → GitHub Pages'][i-1];
+      var now = new Date();
+      document.getElementById(steps[i-1]+'-time').textContent = now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes();
+    }
+    if(i<steps.length){
+      var el = document.getElementById(steps[i]);
+      el.className = 'pipe-icon pi-run spin';
+      el.textContent = '↻';
+      document.getElementById(steps[i]+'-sub').textContent = subs[i];
+      fill.style.width = ((i+1)/steps.length*100)+'%';
+      label.textContent = ['Download dati...','Import CSV...','Doctor import...','Analisi...','Export dashboard...'][i];
+      i++;
+      setTimeout(nextStep, 900);
+    } else {
+      // completato
+      pipelineRunning = false;
+      btn.innerHTML = '▶&nbsp; Esegui pipeline completa';
+      btn.disabled = false;
+      prog.style.display='none';
+      footer.style.display='block';
+      showToast('Pipeline completata — 5/5 asset · 29/29 stress test','ok');
+      // aggiorna log
+      var now = new Date();
+      var ts = now.getDate().toString().padStart(2,'0')+'/'+(now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getFullYear()+' · '+now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes();
+      logs.unshift({badge:'OK',date:ts,desc:'Pipeline completa · 5/5 · Stress 29/29',tags:['GC=F ✓','SI=F ✓','SPY ✓','VOO ✓','SMH ✓']});
+      renderLog();
+    }
+  }
+  nextStep();
+}
+
+// ── Aggiorna vista ──
+function refreshView(){
+  showToast('Vista aggiornata','ok');
+}
+
+// ── Export log ──
+function exportLog(){
+  showToast('Log esportato in Excel — file salvato','ok');
+}
+
+// ── Aggiungi asset ──
+function openAddAsset(){
+  openModal('<div class="modal-title">Aggiungi nuovo asset</div>'+
+    '<div class="modal-sub">Inserisci il codice Yahoo Finance dell\'asset da monitorare</div>'+
+    '<div class="modal-field"><div class="modal-label">Codice Yahoo Finance</div>'+
+    '<input class="modal-input" id="new-code" placeholder="es. AAPL, BTC-USD, GLD"></div>'+
+    '<div class="modal-field"><div class="modal-label">Nome descrittivo</div>'+
+    '<input class="modal-input" id="new-name" placeholder="es. Apple, Bitcoin, Gold ETF"></div>'+
+    '<div class="modal-field"><div class="modal-label">Tipo</div>'+
+    '<select class="modal-input" id="new-type"><option>ETF</option><option>Metallo</option><option>Azione</option><option>Commodity</option></select></div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn" onclick="closeModal()">Annulla</button>'+
+    '<button class="btn btn-green" onclick="addAsset()">Aggiungi asset</button>'+
+    '</div>');
+}
+
+function addAsset(){
+  var code = document.getElementById('new-code').value.trim().toUpperCase();
+  var name = document.getElementById('new-name').value.trim();
+  var type = document.getElementById('new-type').value;
+  if(!code||!name){showToast('Compila tutti i campi','warn');return;}
+  assets.push({code:code,name:name,type:type,price:'—',vol:0,dd:0,pt:0,stato:'N/D'});
+  renderAssets();
+  closeModal();
+  showToast('Asset '+code+' aggiunto — pipeline necessaria per aggiornare i dati','ok');
+}
+
+// ── Rimuovi asset ──
+function removeAsset(i){
+  var code = assets[i].code;
+  openModal('<div class="modal-title">Rimuovi '+code+'</div>'+
+    '<div class="modal-sub">Questa operazione rimuove l\'asset dalla lista monitorata. I dati storici in stg_prezzi_raw vengono mantenuti.</div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn" onclick="closeModal()">Annulla</button>'+
+    '<button class="btn btn-red" onclick="confirmRemove('+i+')">Rimuovi '+code+'</button>'+
+    '</div>');
+}
+function confirmRemove(i){
+  var code = assets[i].code;
+  assets.splice(i,1);
+  renderAssets();
+  closeModal();
+  showToast(code+' rimosso dalla lista monitorata','warn');
+}
+
+// ── Reimporta asset ──
+function reimportaAsset(i){
+  var code = assets[i].code;
+  openModal('<div class="modal-title">Reimporta '+code+'</div>'+
+    '<div class="modal-sub">Cancella i dati esistenti di '+code+' e li reimporta da zero da Yahoo Finance.</div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn" onclick="closeModal()">Annulla</button>'+
+    '<button class="btn btn-amber" onclick="doReimporta(\''+code+'\')">Reimporta '+code+'</button>'+
+    '</div>');
+}
+
+function openReimporta(){
+  var opts = assets.map(function(a){return '<option>'+a.code+'</option>';}).join('');
+  openModal('<div class="modal-title">Reimporta asset</div>'+
+    '<div class="modal-sub">Seleziona l\'asset da reimportare da zero da Yahoo Finance.</div>'+
+    '<div class="modal-field"><div class="modal-label">Asset</div>'+
+    '<select class="modal-input" id="reimporta-select">'+opts+'</select></div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn" onclick="closeModal()">Annulla</button>'+
+    '<button class="btn btn-amber" onclick="doReimporta(document.getElementById(\'reimporta-select\').value)">Reimporta</button>'+
+    '</div>');
+}
+function doReimporta(code){
+  closeModal();
+  showToast('Reimportazione '+code+' avviata — attendere pipeline','ok');
+}
+
+// ── Modifica soglie ──
+function openSoglie(){
+  openModal('<div class="modal-title">Modifica soglie operative</div>'+
+    '<div class="modal-sub">Modifica i parametri di sistema in tbl_sys_config</div>'+
+    '<div class="modal-field"><div class="modal-label">Soglia volatilità (CORE_SOGLIA_VOL)</div>'+
+    '<input class="modal-input" id="s-vol" value="0.30" type="number" step="0.01" min="0.01" max="1"></div>'+
+    '<div class="modal-field"><div class="modal-label">Soglia drawdown (CORE_SOGLIA_DD)</div>'+
+    '<input class="modal-input" id="s-dd" value="0.20" type="number" step="0.01" min="0.01" max="1"></div>'+
+    '<div class="modal-field"><div class="modal-label">Soglia stabile (CORE_SOGLIA_STABILE)</div>'+
+    '<input class="modal-input" id="s-stabile" value="0.6" type="number" step="0.1" min="0" max="1"></div>'+
+    '<div class="modal-field"><div class="modal-label">Soglia fragile (CORE_SOGLIA_FRAGILE)</div>'+
+    '<input class="modal-input" id="s-fragile" value="0.4" type="number" step="0.1" min="0" max="1"></div>'+
+    '<div class="modal-actions">'+
+    '<button class="btn" onclick="closeModal()">Annulla</button>'+
+    '<button class="btn btn-green" onclick="saveSoglie()">Salva soglie</button>'+
+    '</div>');
+}
+function openSogliaEdit(which){
+  openSoglie();
+}
+function saveSoglie(){
+  var vol = parseFloat(document.getElementById('s-vol').value);
+  var dd = parseFloat(document.getElementById('s-dd').value);
+  var st = parseFloat(document.getElementById('s-stabile').value);
+  var fr = parseFloat(document.getElementById('s-fragile').value);
+  document.getElementById('soglia-vol').textContent = Math.round(vol*100)+'%';
+  document.getElementById('soglia-dd').textContent = Math.round(dd*100)+'%';
+  document.getElementById('soglia-stabile').textContent = st.toFixed(1).replace('.',',');
+  document.getElementById('soglia-fragile').textContent = fr.toFixed(1).replace('.',',');
+  closeModal();
+  showToast('Soglie aggiornate in tbl_sys_config','ok');
+}
+
+// ── Stress test ──
+function runStressTest(){
+  showToast('Stress test avviato — 29 test in esecuzione...','info');
+  setTimeout(function(){
+    document.getElementById('stress-score').textContent = '29 / 29';
+    document.getElementById('stress-label').textContent = 'Ultima esecuzione: adesso · Tutti i test superati';
+    document.getElementById('kpi-stress').textContent = '29/29';
+    document.getElementById('kpi-stress-trend').textContent = 'Tutti i test OK';
+    renderStress(29,29);
+    showToast('Stress test completato — 29/29 ✓','ok');
+  }, 2500);
+}
+
+// ── Doctor ──
+function runDoctor(){
+  showToast('Doctor import avviato...','info');
+  setTimeout(function(){
+    showToast('Doctor completato — nessun anomalia rilevata','ok');
+  }, 1800);
+}
+
+// ── Conferma emergenza ──
+function confirmAction(type){
+  var titles = {reset:'Reset sistema',delete:'Cancella dati asset',reimport:'Reimporta da zero'};
+  var descs = {
+    reset:'Questa operazione resetta tutti gli errori e riavvia il sistema ORION. I dati non vengono modificati.',
+    delete:'Seleziona l\'asset i cui dati storici vuoi cancellare da stg_prezzi_raw.',
+    reimport:'Cancella tutti i dati di tutti gli asset e li reimporta da zero da Yahoo Finance. Operazione lunga.'
+  };
+  var extra = type==='delete'?'<div class="modal-field"><div class="modal-label">Asset da cancellare</div><select class="modal-input">'+assets.map(function(a){return '<option>'+a.code+'</option>';}).join('')+'</select></div>':'';
+  var btnClass = type==='reset'?'btn-red':type==='delete'?'btn-amber':'btn-red';
+  var btnLabel = type==='reset'?'Reset sistema':type==='delete'?'Cancella dati':'Reimporta tutto';
+  openModal('<div class="modal-title">⚠ '+titles[type]+'</div>'+
+    '<div class="modal-sub">'+descs[type]+'</div>'+
+    extra+
+    '<div class="modal-actions">'+
+    '<button class="btn" onclick="closeModal()">Annulla</button>'+
+    '<button class="btn '+btnClass+'" onclick="doEmergency(\''+type+'\')">'+btnLabel+'</button>'+
+    '</div>');
+}
+function doEmergency(type){
+  closeModal();
+  var msgs = {reset:'Sistema resettato — riavvio completato',delete:'Dati asset cancellati',reimport:'Reimportazione avviata — pipeline necessaria'};
+  showToast(msgs[type],'warn');
+}
+
+// ── Info ──
+function openInfo(){
+  openModal('<div class="modal-title">Informazioni ORION</div>'+
+    '<div class="modal-sub">Versione corrente del sistema</div>'+
+    '<div class="doctor-row" style="padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="font-size:11px;flex:1">Versione</div><div style="font-size:11px;font-weight:600;font-family:monospace">V205</div></div>'+
+    '<div class="doctor-row" style="padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="font-size:11px;flex:1">Database</div><div style="font-size:11px;font-family:monospace">ORION_V205.accdb</div></div>'+
+    '<div class="doctor-row" style="padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="font-size:11px;flex:1">Percorso</div><div style="font-size:11px;font-family:monospace">C:\\VEGA\\</div></div>'+
+    '<div class="doctor-row" style="padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="font-size:11px;flex:1">Moduli VBA</div><div style="font-size:11px;font-weight:600">13 attivi</div></div>'+
+    '<div class="doctor-row" style="padding:8px 0"><div style="font-size:11px;flex:1">Filosofia</div><div style="font-size:11px;color:var(--green-dark);font-weight:600">Buffett Engineering</div></div>'+
+    '<div class="modal-actions"><button class="btn btn-green" onclick="closeModal()">Chiudi</button></div>');
+}
+
+// ── Init ──
+function init(){
+  renderAssets();
+  renderLog();
+  renderStress(29,29);
+  // orologio live
+  setInterval(function(){
+    var now = new Date();
+    var d = now.getDate().toString().padStart(2,'0')+'/'+(now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getFullYear();
+    var t = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+    document.getElementById('current-time').textContent = d+' · '+t;
+  }, 1000);
+}
+init();
+</script>
+</body>
+</html>
